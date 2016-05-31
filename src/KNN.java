@@ -1,3 +1,5 @@
+import sun.misc.FloatingDecimal;
+
 import java.io.*;
 import java.util.*;
 
@@ -20,12 +22,10 @@ public class KNN {
         try{
             leitor = new BufferedReader(new FileReader(nomeDoArquivo));
             String linha = null;
-
+            linha = leitor.readLine(); // Primeira linha com as palavras que serão ignoradas
             do{
-                linha = leitor.readLine(); // Primeira linha com as palavras que serão ignoradas
+                linha = leitor.readLine();
                 if(linha != null) {
-                    linha = leitor.readLine();
-                    System.out.println(linha);
 
                     String[] medidas = linha.split(",");
                     System.out.println(medidas[0] + " " + medidas[1] + " " + medidas[2] + " " + medidas[3] + " " + medidas[4]);
@@ -49,16 +49,16 @@ public class KNN {
         BufferedReader leitor = null;
         try{
             leitor = new BufferedReader(new FileReader(nomeDoArquivo));
-            int index = 0;
+
             String linha = null;
+            linha = leitor.readLine();
             do{
                 linha = leitor.readLine();
                 if(linha != null) {
-                    linha = leitor.readLine();
                     System.out.println(linha);
                     dadosTeste.add(linha);
                 }
-                index++;
+
             } while(linha != null);
 
         } finally {
@@ -100,64 +100,38 @@ public class KNN {
 
     public static void classificar(String florY, int k){
 
-        String[][] vizinhos = null;
-        String[][] listAux = null;
+        List<Integer> vizinhos;
+        List<Vizinho> listAux = new ArrayList<>();
 
-        for (int i = 0; i< floresTreinamento.size(); i++) {
+        for (int i = 0; i < floresTreinamento.size(); i++) {
             double distancia = calcularDistancia(floresTreinamento.get(i), florY);
-            System.out.println(distancia);
-            listAux[i][0] = String.valueOf(floresTreinamento.get(i).getRotulo());
-            System.out.println(listAux[i][0]);
-            listAux[i][1] = distancia+"";
-            i++;
+            listAux.add(new Vizinho(floresTreinamento.get(i).getRotulo(), distancia));
         }
-        vizinhos = getVizinhos(listAux, k);
-        rotulos.add(getRotulo(vizinhos));
 
-
+        vizinhos = getVizinhos(listAux, k); // Obtém os vizinhos da flor
+        int rotuloFlor = getRotulo(vizinhos); // Obtém o rótulo que mais se repete
+        rotulos.add(rotuloFlor);
     }
 
-    public static String[][] getVizinhos(String[][] array, int k){
-        String[][] arrayAux = null;
-        double menor = Double.parseDouble(array[0][1]);
-        for(int i = 1; i < array.length; i++){
-            double aux = Double.parseDouble(array[i][1]);
-            // Se o array tiver a quantidade de vizinhos e ainda tiver elemento no array passado por parâmetro
-            if(arrayAux.length == k){
-                double maior = Double.parseDouble(arrayAux[0][1]);
-                int indiceMaior = 0;
-                // Procura o elemento com maior distância no arrayAux
-                for (int j = 1; j < arrayAux.length; j++){
-                    double aux2 = Double.parseDouble(arrayAux[j][1]);
-                    if(maior > aux2){
-                        maior = aux2;
-                        indiceMaior = j;
-                    }
-                }
-                // Se o maior elemento encontrado for maior que o menor elemento do array passado por parâmetro
-                if(maior > menor){
-                    // Adicione o elemento no lugar do elemento maior
-                    arrayAux[indiceMaior][0] = array[i - 1][0];
-                    arrayAux[indiceMaior][1] = array[i - 1][1];
-                }
-              // Vai adicionando os elementos menores no arrayAux
-            } else if(arrayAux.length < k) {
-                if (aux < menor) {
-                    menor = aux;
-                    arrayAux[i - 1][0] = array[i - 1][0];
-                    arrayAux[i - 1][1] = array[i - 1][1];
-                }
-            }
+
+    public static List<Integer> getVizinhos(List<Vizinho> listV, int k){
+        List<Integer> arrayAux = new ArrayList<>();
+
+        Collections.sort(listV);
+        for(int i = 0; i < k; i++){
+            arrayAux.add(listV.get(i).getRotulo());
         }
+
         return arrayAux;
     }
 
-    public static int getRotulo(String[][] vizinhos){
+
+    public static int getRotulo(List<Integer> vizinhos){
         int contRot0 = 0;
         int contRot1 = 0;
         int contRot2 = 0;
-        for (int i = 0; i < vizinhos.length; i++){
-            double rotulo = Double.parseDouble(vizinhos[i][0]);
+        for (int i = 0; i < vizinhos.size(); i++){
+            int rotulo = vizinhos.get(i);
             if(rotulo == 0){
                 contRot0++;
             }else if(rotulo == 1){
@@ -168,24 +142,17 @@ public class KNN {
         }
 
         if(contRot0 > contRot1 && contRot0 > contRot2){
-            return contRot0;
+            return 0;
         } else if(contRot1 > contRot0 && contRot1 > contRot2){
-            return contRot1;
+            return 1;
         } else{
-            return contRot2;
+            return 2;
         }
     }
 
     public static int calcularPorcentagem(){
-        int total = rotulosTeste.size();
-        int cont = 0;
-
-        for(int i = 0; i < rotulos.size(); i++){
-            if(rotulos.get(i) == rotulosTeste.get(i)){
-                cont++;
-            }
-        }
-        return (cont/total)*100;
+        // Comparar os arquivos e calcular a porcentagem
+        return 0;
     }
 
     public static void gravarDados(List<Integer> rotulos, String nomeArquivo) throws IOException {
@@ -210,15 +177,14 @@ public class KNN {
             // Carregar dados de teste
             carregarDadosTeste("teste.csv");
             carregarRotulosTeste("rotulos-teste.txt");
-            int k = 30;
-            System.out.println(dadosTeste.get(1));
+            int k = 11;
+
             for(int i = 0; i < dadosTeste.size(); i++){
                 classificar(dadosTeste.get(i), k);
             }
-
-            System.out.println(calcularPorcentagem()+"%");
-            System.out.println("Rodou?");
-
+            System.out.println(dadosTeste.size());
+            gravarDados(rotulos, "rotulosClassificados.txt");
+            
 
         }catch (Exception e){
             e.printStackTrace();
